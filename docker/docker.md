@@ -209,3 +209,82 @@ docker exec -it [컨테이너명 또는 컨테이너 ID] bash
 
 ---
 
+# Docker Volume(도커 볼륨)
+
+* 컨테이너가 가지는 문제점
+  * Docker를 활용하면 특정 프로그램을 컨테이너에 쉽게 띄울 수 있다.
+  * 이 프로그램에 기능이 추가되면 새로운 이미지를 만들어서 컨테이너에 실행시켜야 한다.
+  * 이 때, Docker는 기존 컨테이너에서 변경된 부분을 수정하지 않고, 새로운 컨테이너를 만들어서 통째로 갈아끼우는 방식으로 교체를 한다.
+  * 이런 특징 때문에 기존 컨테이너를 새로운 컨테이너로 교체하게 된다면 기존 컨테이너 내부에 있던 데이터들 역시 같이 삭제가 되어버린다.
+  * 만약 이 컨테이너가 MySQL을 실행시키는 컨테이너였다면 MySQL에 저장된 데이터도 같이 삭제되어버린다.
+  * 따라서 컨테이너 내부에 저장된 데이터가 삭제되면 안 되는 경우에는 볼륨(Volume)이라는 개념을 활용해야 한다.
+
+
+* Docker Volume(도커 볼륨)
+  * 도커 컨테이너에서 데이터를 영속적으로 저장하기 위한 방법이다.
+  * 볼륨은 컨테이너 자체 저장 공간을 사용하지 않고 호스트 자체의 저장 공간을 공유해서 사용하는 방법이다.
+
+```text
+docker run -v [호스트 디렉터리 절대 경로]:[컨테이너 디렉터리 절대 경로] [이미지명]:[태그명]
+```
+
+1. 호스트 디렉터리 절대 경로에 이미 디렉터리가 존재한다면 호스트 디렉터리가 컨테이터 디렉터리를 덮어 씌운다.
+
+![img_14.png](img_14.png)
+
+2. 호스트 디렉터리 절대 경로에 디렉터리가 존재하지 않는다면 호스트 디렉터리 절대 경로에 디렉터리를 새로 만들고 컨테이너 디렉터리에 있는 파일들을 호스트 디렉터리로 복사한다.
+
+![img_15.png](img_15.png)
+
+---
+
+# [추가 실습] Docker로 MySQL 실행
+
+![img_16.png](img_16.png)
+
+* MySQL 데이터를 저장하기 위한 별도의 폴더를 생성 : `C:\Users\TOP\DB-data\docker-mysql`
+* 상대 경로이므로 절대 경로로 변경 → `/c/Users/TOP/DB-data/docker-mysql`
+* 실제로 MySQL DB에 관련된 데이터가 저장되는 곳은 `/var/lib/mysql`이다.
+* 이 때, 주의할 점은 컨테이너의 패스워드이다.
+  * 예를 들어, MySQL의 데이터를 저장할 컨테이너 내부에서 데이터베이스를 생성할 때, 패스워드를 123으로 했다고 가정하자.
+  * 그렇게 되면 이미 Docker Volume으로 설정해둔 폴더에 이미 비밀번호가 저장이 된다.
+  * 그래서 기존 MySQL 컨테이너를 삭제한 후 다시 MySQL 컨테이너를 생성할 때, 패스워드를 기존 패스워드와 달리 하게 되면 접속이 되지 않게 된다.
+  * **따라서 기존 MySQL 컨테이너와 새로 만든 MySQL 컨테이너의 패스워드는 같도록 만들어야 한다.**
+
+![img_17.png](img_17.png)
+
+```text
+// 내가 만든 폴더의 상대 경로(MySQL의 데이터를 저장할 위치)
+C:\Users\TOP\DB-data\docker-mysql   
+
+// docker run -e MYSQL_ROOT_PASSWORD=password123 -p 3306:3306 -v {호스트의 절대경로}:/var/lib/mysql -d mysql
+// /var/lib/mysql → DB에 관련된 데이터가 저장되는 곳이 /var/lib/mysql
+docker run -e MYSQL_ROOT_PASSWORD=123 -d -p 3306:3306 -v /c/Users/TOP/DB-data/docker-mysql:/var/lib/mysql -d mysql
+
+// MySQL 컨테이너에 접속해서 데이터베이스 만들기
+docker exec -it [MySQL 컨테이너 ID] bash
+
+// MySQL 접속
+mysql -u root -p
+
+// 데이터베이스 조회 후 생성
+show databases;
+create database [DB 이름]
+show databases;
+
+// 컨테이너 종료 후 다시 생성해보기
+docker stop [MySQL 컨테이너 ID]
+
+// 컨테이너 삭제
+docker rm [MySQL 컨테이너 ID]
+
+// 다른 MySQL 컨테이너를 생성한 후 다시 확인해보기
+docker run -e MYSQL_ROOT_PASSWORD=123 -d -p 3306:3306 -v /c/Users/TOP/DB-data/docker-mysql:/var/lib/mysql -d mysql
+
+// 컨테이너 내부 접속
+docker exec -it [MySQL 컨테이너 ID] bash
+
+// 기존에 만들었던 데이터베이스가 있는지 확인하기
+show databases
+```
+
