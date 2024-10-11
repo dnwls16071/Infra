@@ -18,8 +18,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script_stop: true
+          # 실행 작업 순차적으로 정리
           script: |
             cd /home/ubuntu/CI-CD-Test
+            git config --global credential.helper store
             git pull origin main
             chmod +x ./gradlew
             ./gradlew clean build
