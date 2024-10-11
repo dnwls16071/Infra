@@ -19,7 +19,7 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script_stop: true
           script: |
-            cd /home/ubuntu/cicd
+            cd /home/ubuntu/CI-CD-Test
             git pull origin main
             chmod +x ./gradlew
             ./gradlew clean build
