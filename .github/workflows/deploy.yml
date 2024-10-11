@@ -15,7 +15,7 @@ jobs:
     # Ref. https://github.com/appleboy/ssh-action
     steps:
       - name: SSH로 EC2에 접속하기
-        uses: appleboy/ssh-action@v1.1.0  # 어떤 라이브러리를 사용할 것인지 기재하는 부분
+        uses: appleboy/ssh-action@v1.0.3  # 어떤 라이브러리를 사용할 것인지 기재하는 부분
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
