@@ -1,0 +1,43 @@
+name: 개인 프로젝트에서 많이 쓰는 CI/CD 구축 방법
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # Ref. https://github.com/appleboy/ssh-action
+    steps:
+      - name: SSH로 EC2에 접속하기
+        uses: appleboy/ssh-action@v1.0.3                                      # 어떤 라이브러리를 사용할 것인지 기재하는 부분
+        env:
+          APPLICATION_PROPERTIES: ${{ secrets.APPLICATION_PROPERTIES }}       # application.yml 파일 역시 secrets으로 등록
+        with:
+          host: ${{ secrets.EC2_HOST }}                                       # Public IP
+          username: ${{ secrets.EC2_USERNAME }}                               # EC2 인스턴스 생성 시 입력한 사용자 이름
+          key: ${{ secrets.EC2_PRIVATE_KEY }}                                 # EC2 인스턴스 생성 시 입력한 키 페어
+          envs: ${{ secrets.APPLICATION_PROPERTIES }}                         # 위에서 등록한 어플리케이션 환경변수 등록
+          script_stop: true
+
+          # 순서 정리
+
+          # 1. 경로 이동
+          # 2. 기존에 application.yml 파일이 존재하는 경우 지우기
+          # 3. git pull로 최신 소스 코드를 가져오기
+          # 4. secrets에 등록한 환경변수를 application.yml 파일에 넣기(리눅스 입출력 >)
+          # 5. 실행 권한 부여
+          # 6. 빌드 작업 수행
+          # 7. 포트 충돌을 방지하기 위해 8080번 포트를 사용하지 못하도록 하기
+          # 8. 백그라운드로 애플리케이션을 실행
+          script: |
+            cd /home/ubuntu/CI-CD-Test
+            rm -rf src/main/resources/application.yml                         
+            git pull origin main
+            echo "$APPLICATION_PROPERTIES" > src/main/resources/application.yml
+            chmod +x ./gradlew
+            ./gradlew clean build
+            sudo fuser -k -n tcp 8080 || true
+            nohup java -jar build/libs/*SNAPSHOT.jar > ./output.log 2>&1 &
