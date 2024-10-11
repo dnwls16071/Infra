@@ -1,6 +1,3 @@
-# 해결 시도1) 보안 그룹 수정
-# 해결 시도2) EC2 인스턴스 종료 후 재시작
-
 name: 개인 프로젝트에서 많이 쓰는 CI/CD 구축 방법 - 1
 
 on:
@@ -9,23 +6,22 @@ on:
       - main
 
 jobs:
-  deploy:
+  Deploy:
     runs-on: ubuntu-latest
 
     # Ref. https://github.com/appleboy/ssh-action
     steps:
       - name: SSH로 EC2에 접속하기
-        uses: appleboy/ssh-action@v1.0.3  # 어떤 라이브러리를 사용할 것인지 기재하는 부분
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          port: 22
           script_stop: true
           script: |
             cd /home/ubuntu/CI-CD-Test
             git pull origin main
-            chmod +x ./gradlew
+            chmod +x ./gradlew build
             ./gradlew clean build
             sudo fuser -k -n tcp 8080 || true
             nohup java -jar build/libs/*SNAPSHOT.jar > ./output.log 2>&1 &
